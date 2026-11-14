@@ -75,3 +75,24 @@ def get_readings(mac: str | None = None,
                  limit: int = Query(default=10, ge=1, le=100)):
     query = {"mac": mac} if mac else {}
     return list(readings.find(query, {"_id": 0}).sort("time", -1).limit(limit))
+
+@app.put("/fans/{mac}/settings")
+def put_settings(mac: str, new_settings: SettingsIn, response: Response):
+    if not fans.find_one({"mac": mac}):
+        raise HTTPException(404, "No fan with MAC " + mac)
+    result = settings.update_one(
+        {"mac": mac},
+        {"$set": {"mode": new_settings.mode,
+                  "max_humidity": new_settings.max_humidity}},
+        upsert=True)
+    response.status_code = 201 if result.upserted_id else 200
+    payload = json.dumps({"mode": new_settings.mode,
+                          "max_humidity": new_settings.max_humidity})
+    topic = f"ecse3038/{MQTT_NAME}/fan/settings"
+    try:
+        publish.single(topic, payload, qos=1, retain=True,
+                       hostname=MQTT_HOST, port=MQTT_PORT)
+    except Exception as e:
+        print("MQTT error:", e)
+    return {"mac": mac, "mode": new_settings.mode,
+            "max_humidity": new_settings.max_humidity}
