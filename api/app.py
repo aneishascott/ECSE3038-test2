@@ -59,3 +59,13 @@ def get_fan(mac: str):
     if not fan:
         raise HTTPException(404, "No fan with MAC " + mac)
     return fan
+
+@app.post("/readings", status_code=201)
+def create_reading(reading: ReadingIn,
+                   x_api_key: str | None = Header(default=None)):
+    check_key(x_api_key, reading.mac)
+    doc = reading.model_dump()
+    doc["time"] = datetime.now(timezone.utc)
+    readings.insert_one(doc)
+    doc.pop("_id")
+    return doc
