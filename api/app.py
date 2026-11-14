@@ -96,3 +96,12 @@ def put_settings(mac: str, new_settings: SettingsIn, response: Response):
         print("MQTT error:", e)
     return {"mac": mac, "mode": new_settings.mode,
             "max_humidity": new_settings.max_humidity}
+
+@app.delete("/fans/{mac}", status_code=204)
+def delete_fan(mac: str, x_api_key: str | None = Header(default=None)):
+    if not fans.find_one({"mac": mac}):
+        raise HTTPException(404, "No fan with MAC " + mac)
+    check_key(x_api_key, mac)
+    fans.delete_one({"mac": mac})
+    settings.delete_one({"mac": mac})
+    return Response(status_code=204)
