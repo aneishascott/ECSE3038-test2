@@ -2,4 +2,5 @@ venv/
 .venv/
 .env
 __pycache__/
-include/secrets.h
+.pio/
+board/include/secrets.h
