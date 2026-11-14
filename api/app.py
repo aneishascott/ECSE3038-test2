@@ -69,3 +69,9 @@ def create_reading(reading: ReadingIn,
     readings.insert_one(doc)
     doc.pop("_id")
     return doc
+
+@app.get("/readings")
+def get_readings(mac: str | None = None,
+                 limit: int = Query(default=10, ge=1, le=100)):
+    query = {"mac": mac} if mac else {}
+    return list(readings.find(query, {"_id": 0}).sort("time", -1).limit(limit))
